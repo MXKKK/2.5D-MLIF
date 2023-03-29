@@ -1,0 +1,42 @@
+name: depth_1024
+ckpt_dir: "./data/ckpt"
+resume_path: "./data/ckpt/depth_1024.ckpt"
+results_path: "./results"
+
+dataset:
+  root: "./data/"
+  input_size: 1024
+  rotation_num: 3
+  train_bsize: 1.0
+  val_bsize: 1.0
+  test_bsize: 1.0
+  types: ["thuman2"]
+  scales: [100.0]
+
+net:
+  in_nml: (('image',3), ('T_depth_F',1), ('T_depth_B',1))
+
+lr_N: 1e-4
+weight_decay: 0.0 
+momentum: 0.0
+batch_size: 1
+num_threads: 4
+gpus: [0]
+test_gpus: [0]
+
+fast_dev: 0
+resume: False
+test_mode: True
+num_sanity_val_steps: 1
+
+momentum: 0.0 
+optim: Adam
+
+# training (batch=4, set=agora, rot-6)
+overfit: False
+num_epoch: 20
+freq_show_train: 0.1
+freq_show_val: 0.01
+freq_plot: 0.01
+freq_eval: 0.1
+schedule: [18]
