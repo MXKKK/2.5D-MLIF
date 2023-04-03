@@ -114,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument("-cfg",
                         "--config",
                         type=str,
-                        default="./configs/train/Our-sdf-fhd.yaml")
+                        default="./configs/train/OurNew-new-com.yaml")
     parser.add_argument("-norm_cfg", default="./configs/normal1024-test.yaml")
     parser.add_argument("-dept_cfg", default="./configs/depthNew.yaml")
     args = parser.parse_args()

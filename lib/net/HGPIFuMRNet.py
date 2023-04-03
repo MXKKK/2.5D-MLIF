@@ -81,7 +81,7 @@ class HGPIFuMRNet(BasePIFuNet):
         #self.smpl_dim = self.opt.smpl_dim
         self.voxel_dim = self.opt.voxel_dim
         self.hourglass_dim = self.opt.hourglass_dim
-        self.smpl_dim = 7
+        self.smpl_dim = 1
 
         #TODO: delete this
         self.ignore = ['F_normal_F', 'F_normal_B']
@@ -183,13 +183,13 @@ class HGPIFuMRNet(BasePIFuNet):
         )
 
         if self.use_filter:
-            # self.G_filter = HGFilter(self.opt, self.opt.num_stack,
-            #                             len(self.channels_filter[0]))
-            # self.B_filter = HGFilter(self.opt, self.opt.num_stack,
-            #                             len(self.channels_filter[0]))
+            self.F_filter = HGFilter(self.opt, self.opt.num_stack,
+                                        len(self.channels_filter[0]))
+            self.B_filter = HGFilter(self.opt, self.opt.num_stack,
+                                        len(self.channels_filter[0]))
 
-            self.F_filter = HGFilterHD(1, 4, len(self.channels_filter[0]), self.opt.hourglass_dim, down_type='no_down')
-            self.B_filter = HGFilterHD(1, 4, len(self.channels_filter[0]), self.opt.hourglass_dim, down_type='no_down')
+            # self.F_filter = HGFilterHD(1, 4, len(self.channels_filter[0]), self.opt.hourglass_dim, down_type='no_down')
+            # self.B_filter = HGFilterHD(1, 4, len(self.channels_filter[0]), self.opt.hourglass_dim, down_type='no_down')
 
         self.sp_encoder = SpatialEncoder()
        
@@ -306,30 +306,30 @@ class HGPIFuMRNet(BasePIFuNet):
         preds_list = []
         vol_feats = features
 
-        if self.prior_type in ["icon", "keypoint"]:
+        # if self.prior_type in ["icon", "keypoint"]:
 
-            # smpl_verts [B, N_vert, 3]
-            # smpl_faces [B, N_face, 3]
-            # xyz [B, 3, N]  --> points [B, N, 3]
-            # HERE:
+        #     # smpl_verts [B, N_vert, 3]
+        #     # smpl_faces [B, N_face, 3]
+        #     # xyz [B, 3, N]  --> points [B, N, 3]
+        #     # HERE:
 
-            point_feat_extractor = PointFeat(self.smpl_feat_dict["smpl_verts"],
-                                             self.smpl_feat_dict["smpl_faces"])
+        #     point_feat_extractor = PointFeat(self.smpl_feat_dict["smpl_verts"],
+        #                                      self.smpl_feat_dict["smpl_faces"])
 
-            point_feat_out = point_feat_extractor.query(
-                xyz.permute(0, 2, 1).contiguous(), self.smpl_feat_dict)
+        #     point_feat_out = point_feat_extractor.query(
+        #         xyz.permute(0, 2, 1).contiguous(), self.smpl_feat_dict)
 
-            feat_lst = [
-                point_feat_out[key] for key in self.smpl_feats
-                if key in point_feat_out.keys()
-            ]
-            smpl_feat = torch.cat(feat_lst, dim=2).permute(0, 2, 1)
+        #     feat_lst = [
+        #         point_feat_out[key] for key in self.smpl_feats
+        #         if key in point_feat_out.keys()
+        #     ]
+        #     smpl_feat = torch.cat(feat_lst, dim=2).permute(0, 2, 1)
 
-            if self.prior_type == "keypoint":
-                kpt_feat = self.sp_encoder.forward(
-                    cxyz=xyz.permute(0, 2, 1).contiguous(),
-                    kptxyz=self.smpl_feat_dict["smpl_joint"],
-                )
+        #     if self.prior_type == "keypoint":
+        #         kpt_feat = self.sp_encoder.forward(
+        #             cxyz=xyz.permute(0, 2, 1).contiguous(),
+        #             kptxyz=self.smpl_feat_dict["smpl_joint"],
+        #         )
 
         for im_feat, vol_feat in zip(features, vol_feats):
 
@@ -344,7 +344,7 @@ class HGPIFuMRNet(BasePIFuNet):
                 # else:
                 point_local_feat = self.index(im_feat, xy)
                     # point_feat_list = [point_local_feat, smpl_feat[:, :, :], sdf[-1], self.netG.phi]
-                point_feat_list = [point_local_feat, smpl_feat[:, :, :], self.netG.phi]
+                point_feat_list = [point_local_feat, self.netG.phi, z]
                 # z *256.0 / 200.0
 
             #print(len(sdf))

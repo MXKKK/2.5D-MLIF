@@ -37,6 +37,8 @@ net:
   use_filter: True
   in_geo: (('F_normal_F',3), ('F_normal_B',3), ('F_depth_F', 1), ('F_depth_B', 1))
   in_nml: (('image',3),('T_normal_F',3), ('T_normal_B',3))
+  in_geo_local: (('F_normal_F',3), ('F_normal_B',3), ('F_depth_F', 1), ('F_depth_B', 1))
+  in_nml_local: (('image',3),)
   smpl_feats: ['sdf', 'cmap', 'norm', 'vis']
   gtype: 'HGPIFuNet'
   ctype: 'resnet34'
