@@ -1,6 +1,6 @@
-name: depth_1024
+name: depthNew
 ckpt_dir: "./data/ckpt/"
-resume_path: "./data/ckpt/depth_1024.ckpt"
+resume_path: "./data/ckpt/depthNew.ckpt"
 results_path: "./results"
 
 dataset:
@@ -14,7 +14,7 @@ dataset:
   scales: [100.0]
 
 net:
-  in_nml: (('image',3), ('T_depth_F',1), ('T_depth_B',1))
+  in_nml: (('image',3), ('F_normal_F',3), ('F_normal_B',3))
 
 lr_N: 1e-4
 weight_decay: 0.0 

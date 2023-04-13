@@ -7,14 +7,11 @@
 # 2. Download CAPE testset (Easy: 50, Hard: 100)
 bash fetch_cape.sh 
 
-# 3. Check CAPE testset via 3D visualization
-python -m lib.dataloader_demo -v -c ./configs/train/icon-filter.yaml -d cape
 ```
 
 ## Command
 
 ```bash
-conda activate icon
 
 # model_type: 
 #   "pifu"            reimplemented PIFu
@@ -22,26 +19,12 @@ conda activate icon
 #   "icon-filter"     ICON w/ global encoder (continous local wrinkles)
 #   "icon-nofilter"   ICON w/o global encoder (correct global pose)
 
-python -m apps.train -cfg ./configs/train/icon-filter.yaml -test
 
+python -m apps.train-MR -cfg ./configs/train/mlif.yaml -test
 # TIP: reduce "mcube_res" as 128 in apps/train.py for faster evaluation
 ```
 
-The qualitative results are located at `./results/icon-filter`
-
-<br>
-
-## Benchmark (train on THuman2.0, test on CAPE)
-
-|Method|PIFu|PaMIR|ICON|ICON-filter|ICON-keypoint|
-|:---:|:---:|:---:|:---:|:---:|:---:|
-|Chamfer(cm)|3.573|1.682|1.533|**1.424**|1.539|
-|P2S(cm)|1.483|1.438|1.431|**1.351**|1.358|
-|NC|0.186|0.119|**0.090**|0.101|0.109|
-
-:boom: ICON-keypoint leverages the core insight **Relative Spatial Encoder** from [KeypointNeRF](https://markomih.github.io/KeypointNeRF/), and replace it with the SMPL-based SDF. This leads to comparable reconstruction quality, but much faster and convenient. 
-
-<br>
+The qualitative results are located at `./results/MLIF`
 
 ## Citation
 

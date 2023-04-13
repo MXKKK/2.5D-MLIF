@@ -608,6 +608,10 @@ class ICONMR(pl.LightningModule):
                                    features=features,
                                    coarse_features=cf,
                                    proj_matrix=None)
+            # c_sdf = self.coarse_reconEngine(opt=self.cfg,
+            #                                 netG=self.netG.netG,
+            #                                 features=cf,
+            #                                 proj_matrix=None)
 
         def tensor2arr(x):
             return (x[0].permute(1, 2, 0).detach().cpu().numpy() +
@@ -625,7 +629,16 @@ class ICONMR(pl.LightningModule):
                                      axis=1)
         Image.fromarray((image_inter).astype(np.uint8)).save(
             osp.join(self.export_dir, f"{mesh_rot}_inter.png"))
-        
+        # if you want to test the repair algorithm, Uncomment the following code
+        # with torch.no_grad():
+        #     c_sdf = self.coarse_reconEngine(opt=self.cfg,
+        #                                     netG=self.netG.netG,
+        #                                     features=cf,
+        #                                     proj_matrix=None)
+        # verts_pr, faces_pr = self.reconEngine.export_mesh2(sdf, c_sdf)
+
+
+        # and comment this
         verts_pr, faces_pr = self.reconEngine.export_mesh(sdf)
 
         if self.clean_mesh_flag:
@@ -649,6 +662,7 @@ class ICONMR(pl.LightningModule):
             osp.join(self.export_dir, f"{mesh_rot}_nc.png"))
 
         test_log = {"chamfer": chamfer, "p2s": p2s, "NC": normal_consist}
+        print(test_log)
 
         return test_log
 
@@ -743,7 +757,7 @@ class ICONMR(pl.LightningModule):
                global_step=step_id,
             )
 
-    def test_single(self, batch):
+    def test_single(self, batch, repair=False):
 
         self.netG.eval()
         self.netG.training = False
@@ -769,30 +783,15 @@ class ICONMR(pl.LightningModule):
         # get corse rendered_normal
         with torch.no_grad():
             cf = self.netG.netG.filter(in_tensor_dict)
-            c_sdf = self.coarse_reconEngine(opt=self.cfg,
-                                   netG=self.netG.netG,
-                                   features=cf,
-                                   proj_matrix=None)
-            img1, img2 = self.coarse_reconEngine.get_FB_normal(c_sdf)
-            img1 = np.flip(img1[:, :, :], axis=0)
-            img1[:,:,-1] = 1.0 - img1[:,:,-1]
-            img1 = img1.copy()
-            img2 = np.flip(img2[:, :, :], axis=0)
-            # plt.imsave('debug/f.png', img1)
-            # plt.imsave('debug/b.png', img2)
-            
+
+
+
             image_to_tensor = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Resize(1024)
             ])
 
-            img1 = (image_to_tensor(img1.copy()) * batch['mask']).to(self.device)
-            img2 = (image_to_tensor(img2.copy()) * batch['mask']).to(self.device)
-            imgN1 = in_tensor_dict['F_normal_F']
-            imgN2 = in_tensor_dict['F_normal_B']
 
-            # in_tensor_dict['C_normal_F'] = imgN1 - img1
-            # in_tensor_dict['C_normal_B'] = imgN2 - img2
         with torch.no_grad():
             
             features, inter, cf = self.netG.filter(in_tensor_dict,
@@ -802,8 +801,18 @@ class ICONMR(pl.LightningModule):
                                    features=features,
                                    coarse_features=cf,
                                    proj_matrix=None)
+            # print(sdf.shape)
+            # np.save('debug/mySdf.npy',sdf.cpu())
 
-        verts_pr, faces_pr = self.reconEngine.export_mesh(sdf)
+        if repair:
+                with torch.no_grad():
+                    c_sdf = self.coarse_reconEngine(opt=self.cfg,
+                                    netG=self.netG.netG,
+                                    features=cf,
+                                    proj_matrix=None)
+                verts_pr, faces_pr = self.reconEngine.export_mesh2(sdf, c_sdf)
+        else:
+            verts_pr, faces_pr = self.reconEngine.export_mesh(sdf)
 
         if self.clean_mesh_flag:
             verts_pr, faces_pr = clean_mesh(verts_pr, faces_pr)

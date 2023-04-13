@@ -1,47 +1,32 @@
 ## Prerequirement
 
-Make sure you have already generated all the required synthetic data (refer to [Dataset Instruction](dataset.md)) under `./data/thuman2_{num_views}views`, which includes the rendered RGB (`render/`), normal images(`normal_B/`, `normal_F/`, `T_normal_B/`, `T_normal_F/`), corresponding calibration matrix (`calib/`) and pre-computed visibility arrays (`vis/`).
+Make sure you have already generated all the required synthetic data (refer to [ICON's Instruction](https://github.com/YuliangXiu/ICON/blob/master/docs/dataset.md)) 
+and add a `_1024_'` tobe `./data/thuman2_1024_{num_views}views`, which includes the rendered RGB (`render/`), normal images(`normal_B/`, `normal_F/`, `T_normal_B/`, `T_normal_F/`), corresponding calibration matrix (`calib/`) and pre-computed visibility arrays (`vis/`).
 
-:eyes: Test your dataloader with [vedo](https://vedo.embl.es/)
 
-```bash
-
-# visualization for SMPL-X mesh
-python -m lib.dataloader_demo -v -c ./configs/train/icon-filter.yaml
-
-# visualization for voxelized SMPL
-python -m lib.dataloader_demo -v -c ./configs/train/pamir.yaml
-```
-
-<p align="center">
-    <img src="../assets/vedo.gif" width=50%>
-</p>
-
-:warning: Don't support headless mode currently, `unset PYOPENGL_PLATFORM` before training.
 ## Command
 
 ```bash
-conda activate icon
+# First Train the normal and depth prediction net(or use a pretrained network)
 
-# model_type: 
-#   "pifu"            reimplemented PIFu
-#   "pamir"           reimplemented PaMIR
-#   "icon-filter"     ICON w/ global encoder (continous local wrinkles)
-#   "icon-nofilter"   ICON w/o global encoder (correct global pose)
-#   "icon-mvp"        minimal viable product, simple yet efficient
+CUDA_VISIBLE_DEVICES=0 python -m apps.train-normal -cfg ./configs/train/normal1024.yaml
 
-# Training for implicit MLP
-CUDA_VISIBLE_DEVICES=0 python -m apps.train -cfg ./configs/train/icon-filter.yaml
+CUDA_VISIBLE_DEVICES=0 python -m apps.train-depth -cfg ./configs/train/depth1024.yaml
 
-# Training for normal network
-CUDA_VISIBLE_DEVICES=0 python -m apps.train-normal -cfg ./configs/train/normal.yaml
-```
+# Generate Predicted Normal and Depth map
+# The Generated Normal map will in 'F_noraml_F' and 'F_normal_B'
+# Depth map will in 'F_depth_F' and 'F_depth_B' under  `./data/thuman2_1024_{num_views}views`
 
-## Tensorboard
+# Remember to store your model according to the configuration file
+CUDA_VISIBLE_DEVICES=0 python -m apps.train-normal -cfg ./configs/train/normal1024.yaml -test
+CUDA_VISIBLE_DEVICES=0 python -m apps.train-depth -cfg ./configs/train/depth1024.yaml -test
 
-```bash
-cd ICON/results/{name}
-tensorboard --logdir .
+
+# Training for coarse-IF
+CUDA_VISIBLE_DEVICES=0 python -m apps.train-coarse -cfg ./configs/train/icon-coarse-nofilter.yaml
+
+# Training for fine-IF
+CUDA_VISIBLE_DEVICES=0 python -m apps.train-MR -cfg ./configs/train/mlif.yaml
 ```
 
 ## Checkpoint

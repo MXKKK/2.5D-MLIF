@@ -27,6 +27,7 @@ if __name__ == "__main__":
                         type=str,
                         help="path of the yaml config file")
     parser.add_argument("-test", "--test_mode", action="store_true")
+    parser.add_argument("-repair", "--use_repair", action="store_true")
     args = parser.parse_args()
     cfg = get_cfg_defaults()
     cfg.merge_from_file(args.config_file)

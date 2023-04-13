@@ -102,6 +102,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-gpu", "--gpu_device", type=int, default=0)
     parser.add_argument("-colab", action="store_true")
+    parser.add_argument("-repair", action="store_true")
     parser.add_argument("-loop_smpl", "--loop_smpl", type=int, default=100)
     parser.add_argument("-patience", "--patience", type=int, default=5)
     parser.add_argument("-vis_freq", "--vis_freq", type=int, default=1000)
@@ -114,9 +115,9 @@ if __name__ == "__main__":
     parser.add_argument("-cfg",
                         "--config",
                         type=str,
-                        default="./configs/train/OurNew-new-com.yaml")
-    parser.add_argument("-norm_cfg", default="./configs/normal1024-test.yaml")
-    parser.add_argument("-dept_cfg", default="./configs/depthNew.yaml")
+                        default="./configs/train/mlif.yaml")
+    parser.add_argument("-norm_cfg", default="./configs/normal1024.yaml")
+    parser.add_argument("-dept_cfg", default="./configs/depth1024.yaml")
     args = parser.parse_args()
 
     
@@ -194,6 +195,7 @@ if __name__ == "__main__":
     model = ICONMR(cfg)
     model = load_checkpointMR(model, cfg)
     model.to(device)
+    t = Timer()
 
     dataset_param = {
         'image_dir': args.in_dir,
@@ -299,7 +301,6 @@ if __name__ == "__main__":
             range(args.loop_smpl if cfg.net.prior_type != "pifu" else 1))
 
         per_data_lst = []
-        #t.start()
         for i in loop_smpl:
 
             per_loop_lst = []
@@ -428,10 +429,6 @@ if __name__ == "__main__":
             scheduler_smpl.step(smpl_loss)
             in_tensor["smpl_verts"] = smpl_verts * \
                 torch.tensor([1.0, 1.0, -1.0]).to(device)
-        # t.stop()
-        # print("Together Time:")
-        # print(t.elapsed)
-        # t.reset()
 
         in_tensor["F_normal_F"] = in_tensor["normal_F"]
         in_tensor["F_normal_B"] = in_tensor["normal_B"]
@@ -527,13 +524,9 @@ if __name__ == "__main__":
 
         # ----------------------------------------------------------------------------
 
-        # t.start()
+
         # pred depth
         in_tensor["F_depth_F"], in_tensor["F_depth_B"] = depth_model.test_single(in_tensor)
-        # t.stop()
-        # print("DepthPred:")
-        # print(t.elapsed)
-        # t.reset()
         in_tensor["F_depth_F_512"] = down_sample(in_tensor["F_depth_F"])
         in_tensor["F_depth_B_512"] = down_sample(in_tensor["F_depth_B"])
 
@@ -567,15 +560,9 @@ if __name__ == "__main__":
                     data["scale"],
                 ))
 
-        # t.start()
         in_tensor = test_sample_coordinate(in_tensor)
         with torch.no_grad():
-            verts_pr, faces_pr, _ = model.test_single(in_tensor)
-        # t.stop()
-        # print("Recon Time")
-        # print(t.elapsed)
-        # t.reset()
-
+            verts_pr, faces_pr, _ = model.test_single(in_tensor, args.repair)
 
         
         recon_obj = trimesh.Trimesh(verts_pr,

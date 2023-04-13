@@ -617,3 +617,57 @@ class Seg3dLossless(nn.Module):
             faces = triangles[0][:, [0, 2, 1]].cpu()
 
         return verts, faces
+
+    def mergeCubes(self, cubes, ccubes):
+
+
+        prev_csdf = -1.0
+
+        # 记录有多少层网格
+        for i in range(0, cubes.shape[0]):
+            for j in range(0, cubes.shape[1]):
+                start = -1
+
+                fine_cnt = 0
+                for k in range(0, cubes.shape[2]): # 轴1是深度
+                    if cubes[k][i][j] >= 0.5:
+                        fine_cnt += 1
+
+
+                    if prev_csdf < 0.5 and ccubes[k][i][j] >= 0.5:
+                        start = k
+                        fine_cnt = 0
+                    elif prev_csdf >= 0.5 and ccubes[k][i][j] < 0.5:
+                        coarse_cnt = k - start
+
+                        if coarse_cnt > 2 and fine_cnt / coarse_cnt < 0.5:
+                            cubes[start-4:k+4, i-3:i+4, j-3:j+4] = ccubes[start-4:k+4, i-3:i+4, j-3:j+4]
+                            #cubes[start-4:k+4, i-3:i-1, j-3:j-1] = 0.5 * cubes[start-4:k+4, i-3:i-1, j-3:j-1] + 0.5 * ccubes[start-4:k+4, i-3:i-1, j-3:j-1]
+                            #cubes[start-4:k+4, i+2:i+4, j+2:j+4] = 0.5 * cubes[start-4:k+4, i+2:i+4, j+2:j+4] + 0.5 * ccubes[start-4:k+4, i+2:i+4, j+2:j+4]
+                    prev_csdf = ccubes[k][i][j]
+            #print(i)
+
+        return cubes
+                    
+
+    def export_mesh2(self, occupancys, csdf):
+
+        final = occupancys[1:, 1:, 1:].contiguous()
+        csdf = csdf[1:, 1:, 1:].contiguous()
+
+       
+        # for voxelgrid larger than 256^3, the required GPU memory will be > 9GB
+        # thus we use CPU marching_cube to avoid "CUDA out of memory"
+        occu_arr = final.detach().cpu().numpy()  # non-smooth surface
+        csdf = mcubes.smooth(csdf.detach().cpu().numpy())
+        occu_arr = self.mergeCubes(occu_arr, csdf)
+
+        # occu_arr = mcubes.smooth(final.detach().cpu().numpy())  # smooth surface
+        vertices, triangles = mcubes.marching_cubes(
+            occu_arr, self.balance_value)
+        verts = torch.as_tensor(vertices[:, [2, 1, 0]])
+        faces = torch.as_tensor(triangles.astype(np.long),
+                                dtype=torch.long)[:, [0, 2, 1]]
+       
+
+        return verts, faces
